@@ -1,6 +1,0 @@
-# Minimal test
-export lattice D1Q3 {
-    stencil: [(0,0,0), (1,0,0)],
-    weights: [0.5, 0.5],
-    cs2: 1/3
-}

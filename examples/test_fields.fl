@@ -1,4 +1,0 @@
-# Minimal test
-field test: scalar float {
-    halo_depth: 0
-}
