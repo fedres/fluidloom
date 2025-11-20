@@ -1,0 +1,26 @@
+{
+  "module": "Module 6: DSL Parser",
+  "date": "2025-11-19",
+  "measurements": {
+    "parse_fields_10": {
+      "description": "Parse fields.fl with 10 field definitions",
+      "target": "< 50ms",
+      "actual": "TBD - requires performance test implementation"
+    },
+    "parse_lattices_2": {
+      "description": "Parse lattices.fl with 2 lattice definitions",
+      "target": "< 20ms",
+      "actual": "TBD - requires performance test implementation"
+    },
+    "generate_preamble_1000": {
+      "description": "Generate OpenCL preamble with 1000 lines",
+      "target": "< 10ms",
+      "actual": "TBD - requires performance test implementation"
+    }
+  },
+  "notes": [
+    "Performance tests should be implemented in tests/performance/test_parser_perf.cpp",
+    "Use std::chrono for timing measurements",
+    "Run tests multiple times and report average"
+  ]
+}

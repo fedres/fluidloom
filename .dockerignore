@@ -1,0 +1,26 @@
+# Exclude build artifacts
+build/
+build-*/
+*.o
+*.a
+*.so
+*.dylib
+
+# Exclude IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Exclude git
+.git/
+.gitignore
+
+# Exclude Docker files
+docker/
+Dockerfile
+.dockerignore
+
+# Exclude documentation build
+docs/_build/

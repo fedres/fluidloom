@@ -1,0 +1,64 @@
+# Lid-Driven Cavity with AMR
+# 2D benchmark for testing adaptive mesh refinement
+
+# Domain: 128x128 base grid, L=0 to L=3 refinement
+# Reynolds number: 1000
+# Lattice: D2Q9
+
+import "d2q9.lattice"
+
+field velocity: vec2
+field density: scalar
+field vorticity: scalar
+field refine_flag: int
+
+initial_condition: {
+    # Initialize uniform density
+    for i in 0..num_cells {
+        density[i] = 1.0
+        velocity[i] = vec2(0.0, 0.0)
+        refine_flag[i] = 0
+    }
+}
+
+time_loop: {
+    # Collision and streaming
+    run lbm_collision(density, velocity)
+    run lbm_streaming(density, velocity)
+    
+    # Apply boundary conditions
+    run apply_bounce_back_walls()
+    run apply_moving_lid(velocity_lid = 0.1)
+    
+    # Compute vorticity for refinement criterion
+    run compute_vorticity(velocity, vorticity)
+    
+    # Mark cells for refinement based on vorticity magnitude
+    for i in 0..num_cells {
+        if abs(vorticity[i]) > 0.5 {
+            refine_flag[i] = 1  # Split
+        } else if abs(vorticity[i]) < 0.1 {
+            refine_flag[i] = -1  # Coarsen
+        } else {
+            refine_flag[i] = 0  # Keep
+        }
+    }
+    
+    # Adapt mesh every 100 steps
+    if timestep % 100 == 0 {
+        adapt_mesh()
+        print("Adapted mesh at step: " + timestep)
+        print("Current cell count: " + num_cells)
+    }
+    
+    # Write output every 500 steps
+    if timestep % 500 == 0 {
+        write_vtk(density, velocity, vorticity, "output/cavity_" + timestep + ".vtk")
+    }
+}
+
+final_output: {
+    write_vtk(density, velocity, vorticity, "output/cavity_final.vtk")
+    write_hdf5(density, velocity, "output/cavity_final.h5")
+    print("Simulation complete!")
+}

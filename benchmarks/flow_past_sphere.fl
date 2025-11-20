@@ -1,0 +1,89 @@
+# Flow Past Sphere with AMR
+# 3D benchmark for testing adaptive mesh refinement in wake region
+
+# Domain: 64x64x64 base grid, L=0 to L=4 refinement
+# Reynolds number: 100
+# Lattice: D3Q19
+
+import "d3q19.lattice"
+
+field velocity: vec3
+field density: scalar
+field q_criterion: scalar
+field refine_flag: int
+
+initial_condition: {
+    # Initialize uniform flow
+    for i in 0..num_cells {
+        density[i] = 1.0
+        velocity[i] = vec3(0.1, 0.0, 0.0)  # Inlet velocity
+        refine_flag[i] = 0
+    }
+    
+    # Place sphere at center
+    place_geometry(
+        type = "sphere",
+        center = vec3(32.0, 32.0, 32.0),
+        radius = 8.0,
+        boundary = "bounce_back"
+    )
+    
+    # Pre-refine around sphere
+    for i in 0..num_cells {
+        vec3 pos = cell_position(i)
+        float dist = distance(pos, vec3(32.0, 32.0, 32.0))
+        if dist < 12.0 {
+            refine_flag[i] = 2  # Refine 2 levels
+        }
+    }
+    
+    adapt_mesh()
+    print("Initial refinement complete. Cells: " + num_cells)
+}
+
+time_loop: {
+    # Collision and streaming
+    run lbm_collision(density, velocity)
+    run lbm_streaming(density, velocity)
+    
+    # Apply boundary conditions
+    run apply_inlet_velocity(velocity_inlet = vec3(0.1, 0.0, 0.0))
+    run apply_outlet_pressure(pressure_outlet = 1.0)
+    run apply_sphere_bounce_back()
+    
+    # Compute Q-criterion for wake detection
+    run compute_q_criterion(velocity, q_criterion)
+    
+    # Adaptive refinement based on Q-criterion
+    for i in 0..num_cells {
+        if q_criterion[i] > 0.01 {
+            refine_flag[i] = 1  # Split (vortex core)
+        } else if q_criterion[i] < 0.001 {
+            refine_flag[i] = -1  # Coarsen (far field)
+        } else {
+            refine_flag[i] = 0  # Keep
+        }
+    }
+    
+    # Adapt mesh every 50 steps
+    if timestep % 50 == 0 {
+        adapt_mesh()
+        print("Adapted mesh at step: " + timestep)
+        print("Current cell count: " + num_cells)
+    }
+    
+    # Write output every 200 steps
+    if timestep % 200 == 0 {
+        write_vtk(density, velocity, q_criterion, "output/sphere_" + timestep + ".vtk")
+    }
+}
+
+final_output: {
+    write_vtk(density, velocity, q_criterion, "output/sphere_final.vtk")
+    write_hdf5(density, velocity, "output/sphere_final.h5")
+    
+    # Compute drag coefficient
+    float drag = compute_drag_force()
+    print("Drag coefficient: " + drag)
+    print("Simulation complete!")
+}

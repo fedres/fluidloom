@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Build service
+  build:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: builder
+    image: fluidloom:builder
+    volumes:
+      - ..:/workspace
+      - build-cache:/workspace/build
+
+  # Unit test service
+  test-unit:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: test
+    image: fluidloom:test
+    volumes:
+      - ..:/workspace
+      - build-cache:/workspace/build
+    command: ctest --output-on-failure
+
+  # Integration test service (2 MPI ranks)
+  test-integration:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: integration
+    image: fluidloom:integration
+    volumes:
+      - ..:/workspace
+      - build-cache:/workspace/build
+    environment:
+      - OMPI_ALLOW_RUN_AS_ROOT=1
+      - OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+  # Benchmark service
+  benchmark:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: benchmark
+    image: fluidloom:benchmark
+    volumes:
+      - ..:/workspace
+      - build-cache:/workspace/build
+      - ./results:/workspace/build/results
+    environment:
+      - OMPI_ALLOW_RUN_AS_ROOT=1
+      - OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+volumes:
+  build-cache:
