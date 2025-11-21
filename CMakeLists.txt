@@ -73,6 +73,9 @@ add_subdirectory(src/parsing)
 add_subdirectory(src/halo)
 add_subdirectory(src/transport)
 add_subdirectory(src/runtime)
+add_subdirectory(src/geometry)
+add_subdirectory(src/profiling)
+add_subdirectory(src/io)
 
 # Testing
 if(FL_BUILD_TESTS)

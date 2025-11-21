@@ -1,0 +1,60 @@
+{
+  "gates": {
+    "hash_rebuild_1M": {
+      "max_ms": 10.0,
+      "unit": "ms",
+      "description": "Hash table rebuild for 1M cells"
+    },
+    "hash_query_latency_p95": {
+      "max_cycles": 50,
+      "unit": "cycles",
+      "description": "95th percentile query latency"
+    },
+    "halo_overlap": {
+      "min_efficiency": 0.90,
+      "unit": "percent",
+      "description": "Halo communication overlap efficiency"
+    },
+    "vtk_write_10M": {
+      "max_sec": 2.0,
+      "unit": "sec",
+      "description": "VTK output for 10M cells"
+    },
+    "hdf5_checkpoint_10M_50fields": {
+      "max_sec": 5.0,
+      "unit": "sec",
+      "description": "HDF5 checkpoint with 50 fields"
+    },
+    "weak_scaling_4gpu": {
+      "min_efficiency": 0.95,
+      "unit": "percent",
+      "description": "Weak scaling efficiency at 4 GPUs"
+    },
+    "strong_scaling_4gpu": {
+      "min_efficiency": 0.36,
+      "unit": "percent",
+      "description": "Strong scaling efficiency at 4 GPUs (36% = 4/11 ideal)"
+    },
+    "memory_usage_1M": {
+      "max_mb": 1500,
+      "unit": "MB",
+      "description": "Peak memory for 1M cells"
+    },
+    "profiler_overhead": {
+      "max_percent": 5.0,
+      "unit": "percent",
+      "description": "Profiling overhead"
+    }
+  },
+  "tolerances": {
+    "rebuild": 0.05,
+    "halo": 0.03,
+    "io": 0.10,
+    "scaling": 0.05
+  },
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-11-21",
+    "description": "Performance gates for FluidLoom CI/CD pipeline"
+  }
+}

@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.20)
+
+# Validation tests
+
+# Memory safety test
+add_executable(memory_safety_test
+    system/memory/memory_safety_test.cpp
+)
+
+target_link_libraries(memory_safety_test
+    PRIVATE
+        fluidloom_test_harness
+        gtest_main
+)
+
+target_include_directories(memory_safety_test
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+gtest_discover_tests(memory_safety_test)
+
+# Checkpoint restart test
+add_executable(checkpoint_restart_test
+    restart/checkpoint_restart_test.cpp
+)
+
+target_link_libraries(checkpoint_restart_test
+    PRIVATE
+        fluidloom_test_harness
+        gtest_main
+)
+
+target_include_directories(checkpoint_restart_test
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+gtest_discover_tests(checkpoint_restart_test)
+
+# Trace validation test
+add_executable(trace_validation_test
+    validation/trace_validation_test.cpp
+)
+
+target_link_libraries(trace_validation_test
+    PRIVATE
+        gtest_main
+)
+
+target_include_directories(trace_validation_test
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+gtest_discover_tests(trace_validation_test)
+
+# Cross-backend test
+add_executable(cross_backend_test
+    cross_backend/cross_backend_test.cpp
+)
+
+target_link_libraries(cross_backend_test
+    PRIVATE
+        fluidloom_test_harness
+        gtest_main
+)
+
+target_include_directories(cross_backend_test
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+gtest_discover_tests(cross_backend_test)

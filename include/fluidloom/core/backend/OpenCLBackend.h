@@ -90,6 +90,7 @@ private:
     // Compiled programs and kernels
     std::map<std::string, cl_program> m_programs;
     std::map<void*, cl_kernel> m_kernels;
+    std::map<void*, std::string> m_kernel_names;
     
     void checkError(cl_int error, const std::string& operation);
     void queryDeviceInfo();

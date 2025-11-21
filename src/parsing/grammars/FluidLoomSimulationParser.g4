@@ -5,7 +5,7 @@ options { tokenVocab=FluidLoomSimulationLexer; }
 import FluidLoomKernelParser;
 
 simulationFile
-    : importSection* fieldDeclaration* kernelDefinition* codeBlock+ EOF
+    : importSection* fieldDeclaration* geometryDefinition* kernelDefinition* codeBlock+ EOF
     ;
 
 importSection
@@ -65,4 +65,38 @@ writeStatement
 
 printStatement
     : PRINT LPAREN expression RPAREN SEMI?
+    ;
+
+// Geometry Definitions
+geometryDefinition
+    : GEOMETRY IDENTIFIER LBRACE geometryProperty* RBRACE
+    ;
+
+geometryProperty
+    : TYPE COLON geometryType SEMI?
+    | SOURCE COLON STRING SEMI?
+    | MATERIAL_ID COLON INT SEMI?
+    | TRANSLATE COLON vectorLiteral SEMI?
+    | SCALE COLON vectorLiteral SEMI?
+    | ROTATE COLON vectorLiteral SEMI?
+    | RADIUS COLON (FLOAT | INT) SEMI?
+    | HEIGHT COLON (FLOAT | INT) SEMI?
+    | WIDTH COLON (FLOAT | INT) SEMI?
+    | LENGTH COLON (FLOAT | INT) SEMI?
+    ;
+
+geometryType
+    : STL
+    | IMPLICIT
+    | BOX
+    | SPHERE
+    | CYLINDER
+    ;
+
+placeGeometryStatement
+    : PLACE_GEOMETRY LPAREN IDENTIFIER RPAREN SEMI?
+    ;
+
+vectorLiteral
+    : LPAREN (FLOAT | INT) COMMA (FLOAT | INT) COMMA (FLOAT | INT) RPAREN
     ;

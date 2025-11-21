@@ -1,6 +1,7 @@
 #include "fluidloom/core/backend/OpenCLBackend.h"
 #include "fluidloom/common/FluidLoomError.h"
 #include "fluidloom/common/Logger.h"
+#include "fluidloom/profiling/Profiler.h"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -88,6 +89,8 @@ void OpenCLBackend::shutdown() {
     if (!m_initialized) {
         FL_THROW(BackendError, "OpenCLBackend not initialized");
     }
+    
+
     
     if (m_queue) {
         clReleaseCommandQueue(m_queue);
@@ -285,6 +288,7 @@ IBackend::KernelHandle OpenCLBackend::compileKernel(
     
     void* handle = static_cast<void*>(kernel);
     m_kernels[handle] = kernel;
+    m_kernel_names[handle] = kernel_name;
     
     FL_LOG(INFO) << "Created kernel: " << kernel_name;
     
@@ -300,6 +304,12 @@ void OpenCLBackend::launchKernel(
     if (!m_initialized) {
         throw std::runtime_error("OpenCLBackend not initialized");
     }
+    
+    std::string name = "UnknownKernel";
+    if (m_kernel_names.count(kernel.handle)) {
+        name = m_kernel_names[kernel.handle];
+    }
+    fluidloom::profiling::ScopedEvent event(name, "OpenCL");
     
     auto it = m_kernels.find(kernel.handle);
     if (it == m_kernels.end()) {

@@ -9,9 +9,10 @@ add_executable(adaptation_unit_tests ${TEST_SOURCES})
 
 target_link_libraries(adaptation_unit_tests
     PRIVATE
-    GTest::gtest_main
+    gtest_main
     fluidloom_adaptation
     fluidloom_core_objects
+    fluidloom_profiling
     OpenCL::OpenCL
 )
 

@@ -84,6 +84,7 @@ target_include_directories(fluidloom_parsing PUBLIC
     ${ANTLR4_INCLUDE_DIRS}
     ${GENERATED_PARSER_DIR}
     ${GENERATED_PARSER_DIR}/src/parsing/grammars
+    ${CMAKE_SOURCE_DIR}/src/parsing/grammars
 )
 
 target_link_libraries(fluidloom_parsing PUBLIC

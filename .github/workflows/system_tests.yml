@@ -1,0 +1,182 @@
+name: FluidLoom System Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly Monday 2 AM
+
+env:
+  BUILD_TYPE: Release
+  TEST_OUTPUT_DIR: ${{ github.workspace }}/test_results
+  PERF_BASELINE_DB: ${{ github.workspace }}/ci/perf_baseline.db
+
+jobs:
+  # Phase 1: Fast unit tests on CPU (MOCK backend)
+  unit_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc-11, clang-14]
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake libgtest-dev valgrind gcovr
+    
+    - name: Configure CMake (MOCK backend)
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DFLUIDLOOM_BACKEND=MOCK \
+          -DFLUIDLOOM_ENABLE_TESTS=ON \
+          -DFLUIDLOOM_ENABLE_COVERAGE=ON
+    
+    - name: Build
+      run: cmake --build build --parallel $(nproc)
+    
+    - name: Run unit tests
+      run: |
+        cd build
+        ctest -R '^unit_' --output-on-failure --parallel $(nproc)
+    
+    - name: Memory check with Valgrind
+      run: |
+        cd build
+        valgrind --error-exitcode=1 --leak-check=full \
+          ctest -R '^unit_memory_' --output-on-failure
+    
+    - name: Generate coverage report
+      run: |
+        cd build
+        gcovr --xml coverage.xml --exclude-unreachable-branches
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: unit-test-results-${{ matrix.compiler }}
+        path: ${{ env.TEST_OUTPUT_DIR }}/unit/
+
+  # Phase 2: System tests (MOCK backend, no GPU required)
+  system_tests:
+    runs-on: ubuntu-latest
+    needs: unit_tests
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake libgtest-dev libbenchmark-dev
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DFLUIDLOOM_BACKEND=MOCK \
+          -DFLUIDLOOM_ENABLE_TESTS=ON
+    
+    - name: Build
+      run: cmake --build build --parallel $(nproc)
+    
+    - name: Run system tests
+      run: |
+        cd build
+        ctest -R '^(lid_driven_cavity|taylor_green|wind_tunnel)' --verbose
+    
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: system-test-logs
+        path: |
+          ${{ env.TEST_OUTPUT_DIR }}/system/
+          **/test_*.log
+
+  # Phase 3: Performance benchmarks
+  performance_benchmarks:
+    runs-on: ubuntu-latest
+    needs: system_tests
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake libbenchmark-dev python3
+    
+    - name: Build performance binaries
+      run: |
+        cmake -B build_perf \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DFLUIDLOOM_BACKEND=MOCK \
+          -DFLUIDLOOM_ENABLE_BENCHMARKS=ON
+        cmake --build build_perf --parallel $(nproc)
+    
+    - name: Run benchmarks
+      run: |
+        cd build_perf
+        make run_benchmarks
+    
+    - name: Performance regression check
+      run: |
+        python3 ci/scripts/regression_detector.py \
+          --baseline ${{ env.PERF_BASELINE_DB }} \
+          --new "build_perf/*_results.json" \
+          --threshold 0.05 \
+          --output regression_report.md \
+          --commit ${{ github.sha }}
+    
+    - name: Upload regression report
+      uses: actions/upload-artifact@v3
+      with:
+        name: regression-report
+        path: regression_report.md
+    
+    - name: Fail on regression
+      run: |
+        if grep -q "REGRESSION" regression_report.md; then
+          echo "Performance regression detected!"
+          cat regression_report.md
+          exit 1
+        fi
+
+  # Phase 4: Memory safety (AddressSanitizer)
+  memory_safety:
+    runs-on: ubuntu-latest
+    needs: unit_tests
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build with ASan
+      run: |
+        cmake -B build_asan \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DFLUIDLOOM_BACKEND=MOCK \
+          -DFLUIDLOOM_ENABLE_ASAN=ON \
+          -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer"
+        cmake --build build_asan --parallel $(nproc)
+    
+    - name: Run tests with AddressSanitizer
+      run: |
+        cd build_asan
+        ASAN_OPTIONS="detect_leaks=1:halt_on_error=1" \
+          ctest -R '^system_' --output-on-failure
+    
+    - name: Generate leak report
+      if: failure()
+      run: |
+        cat ${{ env.TEST_OUTPUT_DIR }}/asan_report.txt
+        exit 1
